@@ -1,0 +1,6 @@
+skip-docker: false
+skip-yarn: true
+skip-pop: false
+skip-webpack: false
+db-type: sqlite3
+with-dep: true
