@@ -1,0 +1,12 @@
+---
+development:
+  dialect: "sqlite3"
+  database: /workspaces/rasengan-editor/server_server_development.sqlite
+
+test:
+  dialect: "sqlite3"
+  database: /workspaces/rasengan-editor/server_server_test.sqlite
+
+production:
+  dialect: "sqlite3"
+  database: /workspaces/rasengan-editor/server_server_production.sqlite
