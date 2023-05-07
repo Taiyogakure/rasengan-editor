@@ -4,3 +4,4 @@ skip-pop: false
 skip-webpack: false
 db-type: sqlite3
 with-dep: true
+vcs: none
