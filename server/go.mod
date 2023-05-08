@@ -10,6 +10,8 @@ require (
 	github.com/gobuffalo/middleware v1.0.0
 	github.com/gobuffalo/pop/v6 v6.1.1
 	github.com/gobuffalo/suite/v4 v4.0.4
+	github.com/gorilla/websocket v1.5.0
+	github.com/pkg/errors v0.9.1
 	github.com/unrolled/secure v1.13.0
 )
 

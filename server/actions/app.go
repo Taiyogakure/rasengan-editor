@@ -67,6 +67,13 @@ func App() *buffalo.App {
 
 		app.GET("/", HomeHandler)
 
+		app.GET("/editor", EditorHandler)
+		hub := NewHub()
+		go hub.Run()
+		app.ANY("/ws", func(c buffalo.Context) error {
+			return WSHandler(c, hub)
+		})
+
 		app.ServeFiles("/", http.FS(public.FS())) // serve files from the public directory
 	})
 
