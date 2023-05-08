@@ -26,7 +26,11 @@ func WSHandler(c buffalo.Context, h *Hub) error {
 		errors.WithStack(err)
 	}
 
-	ws, err := websocket.Upgrade(c.Response(), c.Request(), c.Response().Header(), 1024, 1024)
+	wsu := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+	ws, err := wsu.Upgrade(c.Response(), c.Request(), c.Response().Header())
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
 			errors.WithStack(err)
