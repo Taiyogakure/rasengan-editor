@@ -170,8 +170,6 @@ func (c *Client) Writer() {
 	}()
 
 	for {
-		log.Println("tick")
-
 		select {
 		case message, ok := <-c.buffer:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
