@@ -30,18 +30,20 @@ func WSHandler(c buffalo.Context, h *Hub) error {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
+	wsu.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := wsu.Upgrade(c.Response(), c.Request(), c.Response().Header())
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
-			errors.WithStack(err)
+			return errors.WithStack(err)
 		}
+		return err
 	}
 
 	client := &Client{hub: h, conn: ws, uid: uid, name: name, buffer: make(chan []byte, 256)}
 	client.hub.register <- client
 
-	go client.Reader()
-	client.Writer()
+	client.Reader()
+	// client.Writer()
 
 	client.hub.unregister <- client
 	client.conn.Close()

@@ -148,16 +148,17 @@ func (c *Client) Reader() {
 			c.WriteError("Invalid data")
 			break
 		}
-		messageData := new(map[string]interface{})
-		if err := json.Unmarshal([]byte(message), messageData); err != nil {
-			c.WriteError("Invalid data")
-			break
-		}
+		// messageData := new(map[string]interface{})
+		// if err := json.Unmarshal([]byte(message), messageData); err != nil {
+		// 	c.WriteError("Invalid data")
+		// 	break
+		// }
+		fmt.Println(message)
 		c.hub.broadcast <- &Message{
 			Source:   "client",
 			FromUID:  c.uid,
 			FromName: c.name,
-			Data:     messageData,
+			Data:     message,
 		}
 	}
 }
