@@ -9,8 +9,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gobuffalo/pop/v6"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
+
+	"server/models"
 )
 
 const (
@@ -47,7 +50,7 @@ type Message struct {
 
 // IsAvailableFor ...
 func (message *Message) IsAvailableFor(client *Client) bool {
-	return message.FromUID != "" && message.FromUID == client.uid || message.ToUID != "" && message.ToUID != client.uid
+	return message.FromUID != "" && message.FromUID != client.uid || message.ToUID != "" && message.ToUID == client.uid
 }
 
 // Hub ...
@@ -56,15 +59,21 @@ type Hub struct {
 	broadcast  chan *Message
 	register   chan *Client
 	unregister chan *Client
+	conn       pop.Connection
 }
 
 // NewHub ...
 func NewHub() *Hub {
+	dbConn, err := pop.Connect("development")
+	if err != nil {
+		return nil
+	}
 	return &Hub{
 		broadcast:  make(chan *Message),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
+		conn:       *dbConn,
 	}
 }
 
@@ -88,6 +97,7 @@ func (h *Hub) Run() {
 			}
 		case message := <-h.broadcast:
 			for client := range h.clients {
+				log.Println("sending to: ", client.uid)
 				if !message.IsAvailableFor(client) {
 					continue
 				}
@@ -95,12 +105,12 @@ func (h *Hub) Run() {
 				if err != nil {
 					continue
 				}
-				select {
-				case client.buffer <- data:
-				default:
-					close(client.buffer)
-					delete(h.clients, client)
-				}
+				// select {
+				client.buffer <- data
+				// default:
+				// 	close(client.buffer)
+				// 	delete(h.clients, client)
+				// }
 			}
 		}
 	}
@@ -139,7 +149,7 @@ func (c *Client) Reader() {
 	for {
 		_, data, err := c.conn.ReadMessage()
 		if err != nil {
-			errors.WithStack(err)
+			log.Println(errors.WithStack(err))
 			c.WriteError("Internal Error")
 			break
 		}
@@ -154,6 +164,20 @@ func (c *Client) Reader() {
 		// 	break
 		// }
 		fmt.Println(message)
+		// Retrieve the first row from the table
+		document := &models.Document{}
+		err = c.hub.conn.First(document)
+		if err != nil {
+			log.Println(err)
+			document.Content = message
+			err = c.hub.conn.Create(document)
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			document.Content = message
+			c.hub.conn.Save(document)
+		}
 		c.hub.broadcast <- &Message{
 			Source:   "client",
 			FromUID:  c.uid,
@@ -173,6 +197,7 @@ func (c *Client) Writer() {
 	for {
 		select {
 		case message, ok := <-c.buffer:
+			fmt.Println(c.uid, " message out: ", string(message))
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -184,10 +209,10 @@ func (c *Client) Writer() {
 			}
 			w.Write([]byte("["))
 			w.Write(message)
-			for i := 0; i < len(c.buffer); i++ {
-				w.Write([]byte(","))
-				w.Write(<-c.buffer)
-			}
+			// for i := 0; i < len(c.buffer); i++ {
+			// 	w.Write([]byte(","))
+			// 	w.Write(<-c.buffer)
+			// }
 			w.Write([]byte("]"))
 			if err := w.Close(); err != nil {
 				return

@@ -42,11 +42,13 @@ func WSHandler(c buffalo.Context, h *Hub) error {
 	client := &Client{hub: h, conn: ws, uid: uid, name: name, buffer: make(chan []byte, 256)}
 	client.hub.register <- client
 
-	client.Reader()
-	// client.Writer()
+	go client.Reader()
+	go client.Writer()
 
-	client.hub.unregister <- client
-	client.conn.Close()
+	// client.hub.unregister <- client
+	// client.conn.Close()
+
+	c.Response().WriteHeader(http.StatusOK)
 
 	return nil
 }

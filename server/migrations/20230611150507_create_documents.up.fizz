@@ -1,0 +1,5 @@
+create_table("documents") {
+	t.Column("id", "uuid", {primary: true})
+	t.Column("content", "string", {})
+	t.Timestamps()
+}

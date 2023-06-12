@@ -37,5 +37,9 @@
         var context = textbox.value;
         ws.send(context);
     });
+    ws.addEventListener("message", function(event) {
+        jsonData = JSON.parse(event.data);
+        textbox.value = jsonData[0].data;
+    });
 
   </script>
