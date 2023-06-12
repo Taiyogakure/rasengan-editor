@@ -146,6 +146,22 @@ func (c *Client) Reader() {
 		c.conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
+	document := &models.Document{}
+	err := c.hub.conn.First(document)
+	if err != nil {
+		log.Println(err)
+		document.Content = ""
+		err = c.hub.conn.Create(document)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	c.hub.broadcast <- &Message{
+		Source:   "server",
+		FromUID:  "-1",
+		FromName: "server",
+		Data:     document.Content,
+	}
 	for {
 		_, data, err := c.conn.ReadMessage()
 		if err != nil {
@@ -166,18 +182,10 @@ func (c *Client) Reader() {
 		fmt.Println(message)
 		// Retrieve the first row from the table
 		document := &models.Document{}
-		err = c.hub.conn.First(document)
-		if err != nil {
-			log.Println(err)
-			document.Content = message
-			err = c.hub.conn.Create(document)
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			document.Content = message
-			c.hub.conn.Save(document)
-		}
+		c.hub.conn.First(document)
+		document.Content = message
+		c.hub.conn.Save(document)
+
 		c.hub.broadcast <- &Message{
 			Source:   "client",
 			FromUID:  c.uid,
